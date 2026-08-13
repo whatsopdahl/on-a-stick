@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useGroup } from '../context/GroupContext';
 import FairgroundsMap from '../components/Map/FairgroundsMap';
+import ProfileMenu from '../components/ProfileMenu';
 import AddPinDialog from '../components/Pins/AddPinDialog';
 import PinDetailDialog from '../components/Pins/PinDetailDialog';
 import FilterPanel from '../components/Filters/FilterPanel';
@@ -151,6 +152,7 @@ export default function MapPage() {
               sx={{ mr: 1 }}
             />
           )}
+          <ProfileMenu />
         </Toolbar>
       </AppBar>
 

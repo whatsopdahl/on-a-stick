@@ -151,23 +151,24 @@ export default function FilterPanel({ open, onClose, filters, onChange, members 
                   sx={{ fontWeight: 600 }}
                 />
                 {members.map((member, idx) => {
-                  const color = AUTHOR_COLORS[idx % AUTHOR_COLORS.length];
+                  const color = member.color || AUTHOR_COLORS[idx % AUTHOR_COLORS.length];
                   const selected = !localAuthors || localAuthors.has(member.id);
                   return (
                     <Chip
                       key={member.id}
                       avatar={
-                        <Avatar sx={{ bgcolor: `${color} !important`, color: 'white !important', fontSize: '0.65rem' }}>
+                        <Avatar sx={{ bgcolor: `${selected ? 'rgba(255,255,255,0.35)' : color} !important`, color: 'white !important', fontSize: '0.65rem' }}>
                           {member.display_name?.[0]?.toUpperCase()}
                         </Avatar>
                       }
                       label={member.display_name}
                       onClick={() => toggleAuthor(member.id)}
-                      variant={selected ? 'filled' : 'outlined'}
+                      variant="filled"
                       sx={{
-                        bgcolor: selected ? `${color}22` : undefined,
-                        borderColor: color,
+                        bgcolor: selected ? color : 'action.disabledBackground',
+                        color: selected ? 'white' : 'text.disabled',
                         fontWeight: 600,
+                        '&:hover': { bgcolor: selected ? color : 'action.disabledBackground', filter: 'brightness(1.1)' },
                       }}
                     />
                   );

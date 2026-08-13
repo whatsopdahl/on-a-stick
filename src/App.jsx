@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext';
 import AuthPage from './pages/AuthPage';
 import GroupsPage from './pages/GroupsPage';
 import MapPage from './pages/MapPage';
+import ProfilePage from './pages/ProfilePage';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -43,6 +44,10 @@ export default function App() {
       <Route
         path="/map/:groupId"
         element={<ProtectedRoute><MapPage /></ProtectedRoute>}
+      />
+      <Route
+        path="/profile"
+        element={<ProtectedRoute><ProfilePage /></ProtectedRoute>}
       />
       <Route path="*" element={<Navigate to={user ? '/groups' : '/auth'} replace />} />
     </Routes>

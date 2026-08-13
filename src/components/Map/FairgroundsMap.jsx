@@ -11,7 +11,7 @@ export const PIN_COLORS = {
 };
 
 export const PIN_EMOJIS = {
-  food:     '🍴',
+  food:     '🌭',
   music:    '🎵',
   activity: '🎡',
   show:     '🎭',
@@ -34,25 +34,25 @@ function drawPin(ctx, pin, cx, cy, authorColor, dpr) {
   ctx.shadowBlur = 5 * dpr;
   ctx.shadowOffsetY = 2 * dpr;
 
-  // Pin circle body
+  // Pin circle body — colored by author so it matches the filter chip
   ctx.beginPath();
   ctx.arc(cx, cy - r * 1.6, r, 0, Math.PI * 2);
-  ctx.fillStyle = PIN_COLORS[pin.type];
+  ctx.fillStyle = authorColor;
   ctx.fill();
   ctx.shadowColor = 'transparent';
   ctx.strokeStyle = 'rgba(255,255,255,0.9)';
   ctx.lineWidth = 2 * dpr;
   ctx.stroke();
 
-  // Pin pointer tip
+  // Pin pointer tip — same author color
   ctx.beginPath();
   ctx.moveTo(cx - r * 0.45, cy - r * 0.85);
   ctx.lineTo(cx + r * 0.45, cy - r * 0.85);
   ctx.lineTo(cx, cy);
-  ctx.fillStyle = PIN_COLORS[pin.type];
+  ctx.fillStyle = authorColor;
   ctx.fill();
 
-  // Emoji icon inside circle
+  // Emoji icon inside circle (identifies pin type)
   ctx.font = `${r * 1.1}px serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -65,18 +65,6 @@ function drawPin(ctx, pin, cx, cy, authorColor, dpr) {
     ctx.textBaseline = 'middle';
     ctx.fillText('⏰', cx + r * 0.95, cy - r * 2.45);
   }
-
-  // Author color badge (small circle, top-left of pin circle)
-  const bx = cx - r * 0.85;
-  const by = cy - r * 2.45;
-  const br = r * 0.42;
-  ctx.beginPath();
-  ctx.arc(bx, by, br, 0, Math.PI * 2);
-  ctx.fillStyle = authorColor;
-  ctx.fill();
-  ctx.strokeStyle = 'white';
-  ctx.lineWidth = 1.5 * dpr;
-  ctx.stroke();
 
   ctx.restore();
 }
@@ -125,6 +113,7 @@ export default function FairgroundsMap({
   const drag = useRef({ active: false, startX: 0, startY: 0, lastX: 0, lastY: 0, moved: false });
   const pinch = useRef({ active: false, lastDist: 0, lastMid: { x: 0, y: 0 } });
   const tap = useRef({ startTime: 0, startX: 0, startY: 0 });
+  const userHasManualView = useRef(false);
 
   // Keep refs in sync with props so draw() always has latest data
   useEffect(() => { pinsRef.current = pins; }, [pins]);
@@ -153,7 +142,8 @@ export default function FairgroundsMap({
       const screenX = x + pin.x * imgW * scale;
       const screenY = y + pin.y * imgH * scale;
       const memberIdx = currentMembers.findIndex((m) => m.id === pin.user_id);
-      const authorColor = AUTHOR_COLORS[Math.max(0, memberIdx) % AUTHOR_COLORS.length];
+      const member = memberIdx >= 0 ? currentMembers[memberIdx] : null;
+      const authorColor = member?.color || AUTHOR_COLORS[Math.max(0, memberIdx) % AUTHOR_COLORS.length];
       drawPin(ctx, pin, screenX * dpr, screenY * dpr, authorColor, dpr);
     });
 
@@ -214,7 +204,7 @@ export default function FairgroundsMap({
       const dpr = window.devicePixelRatio || 1;
       canvas.width = canvas.clientWidth * dpr;
       canvas.height = canvas.clientHeight * dpr;
-      fitImage();
+      if (!userHasManualView.current) fitImage();
       requestDraw();
     });
 
@@ -250,6 +240,7 @@ export default function FairgroundsMap({
 
   // ---- Zoom around a CSS-space focal point ----
   const applyZoom = useCallback((focalX, focalY, factor) => {
+    userHasManualView.current = true;
     const { x, y, scale } = viewRef.current;
     const newScale = Math.min(Math.max(scale * factor, 0.3), 20);
     viewRef.current = {
@@ -278,7 +269,7 @@ export default function FairgroundsMap({
     drag.current.lastX = e.clientX;
     drag.current.lastY = e.clientY;
     const moved = Math.abs(e.clientX - drag.current.startX) + Math.abs(e.clientY - drag.current.startY);
-    if (moved > 6) drag.current.moved = true;
+    if (moved > 6) { drag.current.moved = true; userHasManualView.current = true; }
     viewRef.current.x += dx;
     viewRef.current.y += dy;
     requestDraw();
@@ -375,6 +366,18 @@ export default function FairgroundsMap({
     pinch.current.active = false;
   }, [handleTap]);
 
+  // Attach wheel and touchmove as non-passive so preventDefault() works
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => {
+      canvas.removeEventListener('wheel', onWheel);
+      canvas.removeEventListener('touchmove', onTouchMove);
+    };
+  }, [onWheel, onTouchMove]);
+
   return (
     <Box sx={{ width: '100%', height: '100%', position: 'relative', bgcolor: '#e8f5e9' }}>
       <canvas
@@ -390,9 +393,7 @@ export default function FairgroundsMap({
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseUp}
-        onWheel={onWheel}
         onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       />
     </Box>

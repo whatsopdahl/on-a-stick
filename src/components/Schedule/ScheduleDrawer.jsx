@@ -61,9 +61,9 @@ export default function ScheduleDrawer({ open, onClose, pins, members, onPinClic
 
               <List dense>
                 {grouped[day].map((pin, idx) => {
-                  const authorIdx = members.findIndex((m) => m.id === pin.user_id);
-                  const authorColor = AUTHOR_COLORS[Math.max(0, authorIdx) % AUTHOR_COLORS.length];
                   const author = members.find((m) => m.id === pin.user_id);
+                  const authorIdx = members.findIndex((m) => m.id === pin.user_id);
+                  const authorColor = author?.color || AUTHOR_COLORS[Math.max(0, authorIdx) % AUTHOR_COLORS.length];
                   const start = dayjs(pin.start_time);
                   const end = pin.end_time ? dayjs(pin.end_time) : null;
                   const isOngoing = dayjs().isAfter(start) && (!end || dayjs().isBefore(end));
@@ -77,8 +77,8 @@ export default function ScheduleDrawer({ open, onClose, pins, members, onPinClic
                         borderRadius: 2,
                         mb: 0.5,
                         opacity: isPast ? 0.5 : 1,
-                        bgcolor: isOngoing ? `${PIN_COLORS[pin.type]}10` : undefined,
-                        border: isOngoing ? `1px solid ${PIN_COLORS[pin.type]}40` : '1px solid transparent',
+                        bgcolor: isOngoing ? `${authorColor}18` : undefined,
+                        border: isOngoing ? `1px solid ${authorColor}60` : '1px solid transparent',
                       }}
                     >
                       {/* Time column */}
@@ -90,7 +90,7 @@ export default function ScheduleDrawer({ open, onClose, pins, members, onPinClic
                           textAlign: 'right',
                         }}
                       >
-                        <Typography variant="caption" fontWeight={700} color={isOngoing ? PIN_COLORS[pin.type] : 'text.primary'}>
+                        <Typography variant="caption" fontWeight={700} color={isOngoing ? authorColor : 'text.primary'}>
                           {start.format('h:mm A')}
                         </Typography>
                         {end && (
@@ -100,12 +100,12 @@ export default function ScheduleDrawer({ open, onClose, pins, members, onPinClic
                         )}
                       </Box>
 
-                      {/* Pin type icon */}
+                      {/* Pin icon — author color with type emoji */}
                       <Box
                         sx={{
                           width: 36, height: 36,
                           borderRadius: '50%',
-                          bgcolor: PIN_COLORS[pin.type],
+                          bgcolor: authorColor,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: 18, flexShrink: 0, mr: 1.5,
                         }}

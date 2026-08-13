@@ -28,7 +28,7 @@ export default function PinDetailDialog({ pin, members, currentUserId, open, onC
   const needsTimes = TIME_TYPES.has(pin.type);
   const author = members.find((m) => m.id === pin.user_id);
   const authorIdx = members.findIndex((m) => m.id === pin.user_id);
-  const authorColor = AUTHOR_COLORS[Math.max(0, authorIdx) % AUTHOR_COLORS.length];
+  const authorColor = author?.color || AUTHOR_COLORS[Math.max(0, authorIdx) % AUTHOR_COLORS.length];
 
   const startEdit = () => {
     setEditTitle(pin.title);

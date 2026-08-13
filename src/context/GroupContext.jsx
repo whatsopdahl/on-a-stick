@@ -34,13 +34,25 @@ export function GroupProvider({ children }) {
     if (!user) return;
     setLoadingGroups(true);
     try {
-      const { data, error } = await supabase
+      const { data: groupsData, error } = await supabase
         .from('groups')
-        .select(`
-          id, name, created_at,
-          group_members(user_id)
-        `);
-      if (!error && data) setGroups(data);
+        .select('id, name, created_at, created_by');
+      if (error || !groupsData) return;
+
+      if (groupsData.length === 0) {
+        setGroups([]);
+        return;
+      }
+
+      const { data: membersData } = await supabase
+        .from('group_members')
+        .select('group_id, user_id')
+        .in('group_id', groupsData.map((g) => g.id));
+
+      setGroups(groupsData.map((g) => ({
+        ...g,
+        group_members: (membersData || []).filter((m) => m.group_id === g.id),
+      })));
     } catch {
       // Offline - keep existing groups
     } finally {
@@ -88,13 +100,28 @@ export function GroupProvider({ children }) {
 
   const fetchMembers = useCallback(async (groupId) => {
     try {
-      const { data, error } = await supabase
+      const { data: memberData, error: memberError } = await supabase
         .from('group_members')
-        .select('user_id, joined_at, profiles(id, display_name, color)')
+        .select('user_id, joined_at')
         .eq('group_id', groupId);
-      if (!error && data) {
-        setMembers(data.map((m) => m.profiles).filter(Boolean));
-      }
+
+      if (memberError || !memberData?.length) { setMembers([]); return; }
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, display_name, color')
+        .in('id', memberData.map((m) => m.user_id));
+
+      if (profileError) return;
+
+      setMembers(
+        memberData
+          .map((m) => {
+            const profile = (profileData || []).find((p) => p.id === m.user_id);
+            return profile ? { ...profile, joined_at: m.joined_at } : null;
+          })
+          .filter(Boolean)
+      );
     } catch {}
   }, []);
 
@@ -185,6 +212,32 @@ export function GroupProvider({ children }) {
     return data || [];
   }, []);
 
+  const leaveGroup = useCallback(async (groupId) => {
+    const { error } = await supabase.rpc('leave_group', { p_group_id: groupId });
+    if (error) throw error;
+    setGroups((prev) => prev.filter((g) => g.id !== groupId));
+    if (currentGroup?.id === groupId) setCurrentGroup(null);
+  }, [currentGroup]);
+
+  const renameGroup = useCallback(async (groupId, newName) => {
+    const { error } = await supabase.rpc('rename_group', { p_group_id: groupId, new_name: newName });
+    if (error) throw error;
+    setGroups((prev) => prev.map((g) => g.id === groupId ? { ...g, name: newName } : g));
+    if (currentGroup?.id === groupId) setCurrentGroup((g) => ({ ...g, name: newName }));
+  }, [currentGroup]);
+
+  const changeGroupPassword = useCallback(async (groupId, newPassword) => {
+    const { error } = await supabase.rpc('change_group_password', { p_group_id: groupId, new_password: newPassword });
+    if (error) throw error;
+  }, []);
+
+  const deleteGroup = useCallback(async (groupId) => {
+    const { error } = await supabase.rpc('delete_group', { p_group_id: groupId });
+    if (error) throw error;
+    setGroups((prev) => prev.filter((g) => g.id !== groupId));
+    if (currentGroup?.id === groupId) { setCurrentGroup(null); setPins([]); setMembers([]); }
+  }, [currentGroup]);
+
   const addPin = useCallback(async (pinData) => {
     const { data, error } = await supabase
       .from('pins')
@@ -192,13 +245,29 @@ export function GroupProvider({ children }) {
       .select()
       .single();
     if (error) throw error;
+    setPins((prev) => {
+      if (prev.find((p) => p.id === data.id)) return prev; // already added by Realtime
+      const next = [...prev, data];
+      try {
+        if (currentGroup?.id) localStorage.setItem(PINS_CACHE_KEY(currentGroup.id), JSON.stringify(next));
+      } catch {}
+      return next;
+    });
     return data;
   }, [currentGroup, user]);
 
   const deletePin = useCallback(async (pinId) => {
     const { error } = await supabase.from('pins').delete().eq('id', pinId);
     if (error) throw error;
-  }, []);
+    setPins((prev) => {
+      const next = prev.filter((p) => p.id !== pinId);
+      try {
+        const groupId = currentGroup?.id;
+        if (groupId) localStorage.setItem(PINS_CACHE_KEY(groupId), JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, [currentGroup]);
 
   const updatePin = useCallback(async (pinId, updates) => {
     const { data, error } = await supabase
@@ -208,8 +277,16 @@ export function GroupProvider({ children }) {
       .select()
       .single();
     if (error) throw error;
+    setPins((prev) => {
+      const next = prev.map((p) => (p.id === pinId ? data : p));
+      try {
+        const groupId = currentGroup?.id;
+        if (groupId) localStorage.setItem(PINS_CACHE_KEY(groupId), JSON.stringify(next));
+      } catch {}
+      return next;
+    });
     return data;
-  }, []);
+  }, [currentGroup]);
 
   return (
     <GroupContext.Provider value={{
@@ -225,6 +302,10 @@ export function GroupProvider({ children }) {
       createGroup,
       joinGroup,
       searchGroups,
+      leaveGroup,
+      renameGroup,
+      changeGroupPassword,
+      deleteGroup,
       addPin,
       deletePin,
       updatePin,

@@ -9,12 +9,11 @@ import { GroupProvider } from './context/GroupContext';
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#1565c0', // Deep blue — MN State Fair colors
-      light: '#1e88e5',
-      dark: '#0d47a1',
+      main: '#00AEEF',
+      contrastText: '#fff'
     },
     secondary: {
-      main: '#fdd835', // Fair yellow/gold
+      main: '#02A64F', // Fair yellow/gold
       contrastText: '#000',
     },
     background: {
