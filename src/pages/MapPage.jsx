@@ -214,6 +214,7 @@ export default function MapPage() {
         pin={selectedPin}
         members={members}
         currentUserId={user?.id}
+        isGroupCreator={currentGroup?.created_by === user?.id}
         open={!!selectedPin}
         onClose={() => setSelectedPin(null)}
         onDelete={handleDeletePin}

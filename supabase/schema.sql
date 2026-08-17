@@ -110,6 +110,14 @@ create policy "Pin authors can update their own pins"
 create policy "Pin authors can delete their own pins"
   on pins for delete using (auth.uid() = user_id);
 
+create policy "Group creators can delete any pin in their group"
+  on pins for delete using (
+    exists (
+      select 1 from public.groups
+      where groups.id = pins.group_id and groups.created_by = auth.uid()
+    )
+  );
+
 -- ============================================================
 -- RPC FUNCTIONS
 -- ============================================================

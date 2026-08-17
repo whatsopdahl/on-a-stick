@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   Box, Card, CardContent, Tabs, Tab, TextField, Button,
   Typography, Alert, InputAdornment, IconButton, CircularProgress, Divider,
   useTheme,
   Grid,
+  Link,
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
@@ -171,6 +173,13 @@ export default function AuthPage() {
                   ),
                 }}
               />
+              {tab === 0 && (
+                <Box sx={{ textAlign: 'right', mt: -1 }}>
+                  <Link component={RouterLink} to="/forgot-password" variant="body2" underline="hover">
+                    Forgot password?
+                  </Link>
+                </Box>
+              )}
               <Button
                 type="submit"
                 variant="contained"

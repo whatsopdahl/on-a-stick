@@ -13,7 +13,7 @@ import { PIN_COLORS, PIN_EMOJIS, AUTHOR_COLORS } from '../Map/FairgroundsMap';
 
 const TIME_TYPES = new Set(['music', 'show']);
 
-export default function PinDetailDialog({ pin, members, currentUserId, open, onClose, onDelete, onUpdate }) {
+export default function PinDetailDialog({ pin, members, currentUserId, isGroupCreator, open, onClose, onDelete, onUpdate }) {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editNotes, setEditNotes] = useState('');
@@ -25,6 +25,7 @@ export default function PinDetailDialog({ pin, members, currentUserId, open, onC
   if (!pin) return null;
 
   const isOwner = pin.user_id === currentUserId;
+  const canDelete = isOwner || isGroupCreator;
   const needsTimes = TIME_TYPES.has(pin.type);
   const author = members.find((m) => m.id === pin.user_id);
   const authorIdx = members.findIndex((m) => m.id === pin.user_id);
@@ -66,6 +67,7 @@ export default function PinDetailDialog({ pin, members, currentUserId, open, onC
       await onDelete(pin.id);
     } catch (err) {
       setError(err.message);
+    } finally {
       setLoading(false);
     }
   };
@@ -178,7 +180,7 @@ export default function PinDetailDialog({ pin, members, currentUserId, open, onC
         </DialogContent>
 
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          {isOwner && !editing && (
+          {canDelete && !editing && (
             <Button
               color="error"
               startIcon={<Delete />}

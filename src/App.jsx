@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { CircularProgress, Box } from '@mui/material';
 import { useAuth } from './context/AuthContext';
 import AuthPage from './pages/AuthPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import GroupsPage from './pages/GroupsPage';
 import MapPage from './pages/MapPage';
 import ProfilePage from './pages/ProfilePage';
@@ -37,6 +39,11 @@ export default function App() {
         path="/auth"
         element={user ? <Navigate to="/groups" replace /> : <AuthPage />}
       />
+      <Route
+        path="/forgot-password"
+        element={user ? <Navigate to="/groups" replace /> : <ForgotPasswordPage />}
+      />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route
         path="/groups"
         element={<ProtectedRoute><GroupsPage /></ProtectedRoute>}
