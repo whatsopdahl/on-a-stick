@@ -4,3 +4,11 @@ dist/
 .env.local
 .DS_Store
 *.local
+
+# Terraform (commit .terraform.lock.hcl for reproducible provider versions)
+infra/**/.terraform/
+infra/**/*.tfstate
+infra/**/*.tfstate.*
+infra/**/terraform.tfvars
+infra/**/*.tfplan
+infra/**/crash.log
