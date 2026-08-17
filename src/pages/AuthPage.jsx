@@ -65,7 +65,7 @@ export default function AuthPage() {
         <CardContent sx={{ p: 3 }}>
           <Grid container alignItems="center" justifyContent="center" sx={{ gap: 2 }}>
             <Grid item xs="auto">
-              <img src="public/icons/on_a_stick_logo.svg" height="56" width="56" />
+              <img src="/on_a_stick_logo.svg" height="56" width="56" />
             </Grid>
             <Grid item xs="auto" sx={{ textAlign: 'center', mb: 1 }}>
               <Typography variant="h5" fontWeight={700} color="primary">
