@@ -58,12 +58,17 @@ npm run build
 
 ---
 
-## Deployment (GitHub + Vercel / Netlify)
+## Deployment (AWS: S3 + CloudFront via Terraform)
 
-1. Push the repo to GitHub.
-2. Connect the repo to Vercel or Netlify.
-3. Add the environment variables (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) in your hosting provider's dashboard.
-4. Deploy.
+Hosting is S3 + CloudFront on a custom domain, provisioned with Terraform
+and deployed automatically by GitHub Actions on push to `main`. See
+[`infra/README.md`](infra/README.md) for one-time setup (state backend
+bootstrap, `terraform apply`, GitHub secrets/variables) and
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) for the
+deploy pipeline. There is no backend compute yet — the app talks to
+Supabase directly from the browser; see
+[`lambdas/README.md`](lambdas/README.md) for the planned path to adding
+one.
 
 The PWA service worker and manifest are automatically included in the production build.
 
