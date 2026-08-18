@@ -23,9 +23,12 @@ export const AUTHOR_COLORS = [
   '#5E35B1', '#00897B', '#F4511E', '#546E7A',
 ];
 
+export const COMPLETED_COLOR = '#9E9E9E';
+
 // ---- Draw a single pin on the canvas ----
 function drawPin(ctx, pin, cx, cy, authorColor, dpr) {
   const r = 14 * dpr;
+  const pinColor = pin.completed ? COMPLETED_COLOR : authorColor;
 
   ctx.save();
 
@@ -35,21 +38,22 @@ function drawPin(ctx, pin, cx, cy, authorColor, dpr) {
   ctx.shadowOffsetY = 2 * dpr;
 
   // Pin circle body — colored by author so it matches the filter chip
+  // (greyed out once completed)
   ctx.beginPath();
   ctx.arc(cx, cy - r * 1.6, r, 0, Math.PI * 2);
-  ctx.fillStyle = authorColor;
+  ctx.fillStyle = pinColor;
   ctx.fill();
   ctx.shadowColor = 'transparent';
   ctx.strokeStyle = 'rgba(255,255,255,0.9)';
   ctx.lineWidth = 2 * dpr;
   ctx.stroke();
 
-  // Pin pointer tip — same author color
+  // Pin pointer tip — same color
   ctx.beginPath();
   ctx.moveTo(cx - r * 0.45, cy - r * 0.85);
   ctx.lineTo(cx + r * 0.45, cy - r * 0.85);
   ctx.lineTo(cx, cy);
-  ctx.fillStyle = authorColor;
+  ctx.fillStyle = pinColor;
   ctx.fill();
 
   // Emoji icon inside circle (identifies pin type)
@@ -59,11 +63,29 @@ function drawPin(ctx, pin, cx, cy, authorColor, dpr) {
   ctx.fillText(PIN_EMOJIS[pin.type], cx, cy - r * 1.6);
 
   // Clock badge for time-constrained pins (top-right of circle)
-  if (pin.start_time) {
+  if (pin.start_time && !pin.completed) {
     ctx.font = `${r * 0.75}px serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('⏰', cx + r * 0.95, cy - r * 2.45);
+  }
+
+  // Checkmark badge for completed pins (top-right of circle)
+  if (pin.completed) {
+    const bx = cx + r * 0.95;
+    const by = cy - r * 2.45;
+    ctx.beginPath();
+    ctx.arc(bx, by, r * 0.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#4CAF50';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 1.5 * dpr;
+    ctx.stroke();
+    ctx.font = `${r * 0.6}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('✓', bx, by + r * 0.05);
   }
 
   ctx.restore();

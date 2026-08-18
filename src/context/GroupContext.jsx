@@ -288,6 +288,23 @@ export function GroupProvider({ children }) {
     return data;
   }, [currentGroup]);
 
+  const setPinCompleted = useCallback(async (pinId, completed) => {
+    const { data, error } = await supabase.rpc('set_pin_completed', {
+      p_pin_id: pinId,
+      p_completed: completed,
+    });
+    if (error) throw error;
+    setPins((prev) => {
+      const next = prev.map((p) => (p.id === pinId ? data : p));
+      try {
+        const groupId = currentGroup?.id;
+        if (groupId) localStorage.setItem(PINS_CACHE_KEY(groupId), JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+    return data;
+  }, [currentGroup]);
+
   return (
     <GroupContext.Provider value={{
       groups,
@@ -309,6 +326,7 @@ export function GroupProvider({ children }) {
       addPin,
       deletePin,
       updatePin,
+      setPinCompleted,
     }}>
       {children}
     </GroupContext.Provider>

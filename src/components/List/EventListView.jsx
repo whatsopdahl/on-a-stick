@@ -2,7 +2,7 @@ import {
   Box, Typography, List, ListItemButton, ListItemText,
   Chip, Divider,
 } from '@mui/material';
-import { EventBusy } from '@mui/icons-material';
+import { EventBusy, CheckCircle } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { PIN_COLORS, PIN_EMOJIS, AUTHOR_COLORS } from '../Map/FairgroundsMap';
 
@@ -22,7 +22,7 @@ function PinRow({ pin, members, memberColors, onPinClick, showTime }) {
       sx={{
         borderRadius: 2,
         mb: 0.5,
-        opacity: isPast ? 0.5 : 1,
+        opacity: pin.completed ? 0.5 : (isPast ? 0.5 : 1),
         bgcolor: isOngoing ? `${color}18` : undefined,
         border: isOngoing ? `1px solid ${color}60` : '1px solid transparent',
       }}
@@ -44,7 +44,7 @@ function PinRow({ pin, members, memberColors, onPinClick, showTime }) {
         sx={{
           width: 36, height: 36,
           borderRadius: '50%',
-          bgcolor: color,
+          bgcolor: pin.completed ? 'grey.500' : color,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 18, flexShrink: 0, mr: 1.5,
         }}
@@ -55,8 +55,17 @@ function PinRow({ pin, members, memberColors, onPinClick, showTime }) {
       <ListItemText
         primary={
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-            <Typography variant="body2" fontWeight={600}>{pin.title}</Typography>
-            {isOngoing && (
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              sx={{ textDecoration: pin.completed ? 'line-through' : 'none' }}
+            >
+              {pin.title}
+            </Typography>
+            {pin.completed && (
+              <CheckCircle color="success" sx={{ fontSize: 16 }} />
+            )}
+            {isOngoing && !pin.completed && (
               <Chip label="NOW" size="small" color="success" sx={{ height: 18, fontSize: 10, fontWeight: 700 }} />
             )}
           </Box>

@@ -3,6 +3,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, TextField, Box, Typography, Chip, Avatar,
   Divider, IconButton, CircularProgress, Alert,
+  Switch, FormControlLabel, Tooltip,
 } from '@mui/material';
 import { AccessTime, Delete, Edit, Check, Close } from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -13,7 +14,7 @@ import { PIN_COLORS, PIN_EMOJIS, AUTHOR_COLORS } from '../Map/FairgroundsMap';
 
 const TIME_TYPES = new Set(['music', 'show']);
 
-export default function PinDetailDialog({ pin, members, memberColors, currentUserId, isGroupCreator, open, onClose, onDelete, onUpdate }) {
+export default function PinDetailDialog({ pin, members, memberColors, currentUserId, isGroupCreator, open, onClose, onDelete, onUpdate, onToggleComplete }) {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editNotes, setEditNotes] = useState('');
@@ -53,6 +54,18 @@ export default function PinDetailDialog({ pin, members, memberColors, currentUse
         end_time: needsTimes && editEnd ? dayjs(editEnd).toISOString() : pin.end_time,
       });
       setEditing(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleComplete = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await onToggleComplete(pin.id, !pin.completed);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -106,6 +119,27 @@ export default function PinDetailDialog({ pin, members, memberColors, currentUse
                 sx={{ bgcolor: `${PIN_COLORS[pin.type]}22`, color: PIN_COLORS[pin.type], fontWeight: 600, mt: 0.25 }}
               />
             </Box>
+            <Tooltip title={pin.completed ? 'Mark as incomplete' : 'Mark as complete'}>
+              <span>
+                <FormControlLabel
+                  labelPlacement="top"
+                  sx={{ m: 0, flexShrink: 0 }}
+                  control={
+                    <Switch
+                      checked={!!pin.completed}
+                      onChange={handleToggleComplete}
+                      disabled={loading}
+                      color="success"
+                    />
+                  }
+                  label={
+                    <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1 }}>
+                      Done
+                    </Typography>
+                  }
+                />
+              </span>
+            </Tooltip>
           </Box>
         </DialogTitle>
 
@@ -191,7 +225,7 @@ export default function PinDetailDialog({ pin, members, memberColors, currentUse
             </Button>
           )}
           {isOwner && !editing && (
-            <Button startIcon={<Edit />} onClick={startEdit}>Edit</Button>
+            <Button startIcon={<Edit />} onClick={startEdit} disabled={loading}>Edit</Button>
           )}
           {editing && (
             <>

@@ -24,7 +24,7 @@ export default function MapPage() {
   const { groupId } = useParams();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const { groups, currentGroup, pins, members, isOffline, selectGroup, addPin, deletePin, updatePin } = useGroup();
+  const { groups, currentGroup, pins, members, isOffline, selectGroup, addPin, deletePin, updatePin, setPinCompleted } = useGroup();
 
   const [placing, setPlacing] = useState(false);
   const [pendingCoords, setPendingCoords] = useState(null);
@@ -118,6 +118,16 @@ export default function MapPage() {
       setSnackbar({ open: true, message: err.message, severity: 'error' });
     }
   }, [updatePin]);
+
+  const handleToggleComplete = useCallback(async (pinId, completed) => {
+    try {
+      const updated = await setPinCompleted(pinId, completed);
+      setSelectedPin(updated);
+      setSnackbar({ open: true, message: completed ? 'Marked complete' : 'Marked incomplete', severity: 'success' });
+    } catch (err) {
+      setSnackbar({ open: true, message: err.message, severity: 'error' });
+    }
+  }, [setPinCompleted]);
 
   // 0=Map, 1=List, 2=Schedule, 3=Filter
   const bottomNavValue = scheduleOpen ? 2 : filterOpen ? 3 : (mainView === 'map' ? 0 : 1);
@@ -244,6 +254,7 @@ export default function MapPage() {
         onClose={() => setSelectedPin(null)}
         onDelete={handleDeletePin}
         onUpdate={handleUpdatePin}
+        onToggleComplete={handleToggleComplete}
       />
 
       <FilterPanel
