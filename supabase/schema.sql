@@ -43,6 +43,7 @@ create table if not exists pins (
   y double precision not null check (y >= 0 and y <= 1),
   start_time timestamptz,
   end_time timestamptz,
+  completed boolean not null default false,
   created_at timestamptz default now()
 );
 
@@ -209,6 +210,35 @@ begin
 end;
 $$;
 
+-- Toggle a pin's completed flag. Any group member may call this (not just
+-- the pin's author) — it only ever touches the `completed` column, so it
+-- can't be used to bypass the author-only edit/delete restrictions above.
+create or replace function public.set_pin_completed(p_pin_id uuid, p_completed boolean)
+returns public.pins
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  updated_pin public.pins;
+begin
+  if not exists (
+    select 1 from public.pins
+    where pins.id = p_pin_id
+      and public.is_group_member(pins.group_id, auth.uid())
+  ) then
+    raise exception 'Not a member of this pin''s group';
+  end if;
+
+  update public.pins
+  set completed = p_completed
+  where id = p_pin_id
+  returning * into updated_pin;
+
+  return updated_pin;
+end;
+$$;
+
 -- Trigger: auto-create profile on new user signup
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
@@ -230,6 +260,7 @@ grant execute on function public.search_groups_by_name(text)  to authenticated;
 grant execute on function public.create_group(text, text)      to authenticated;
 grant execute on function public.join_group(uuid, text)        to authenticated;
 grant execute on function public.is_group_member(uuid, uuid)   to authenticated;
+grant execute on function public.set_pin_completed(uuid, boolean) to authenticated;
 
 -- ============================================================
 -- REALTIME
