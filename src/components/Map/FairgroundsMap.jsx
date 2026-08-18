@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback } from 'react';
-import { Box } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
 
 // ---- Pin styling constants ----
 export const PIN_COLORS = {
@@ -26,7 +26,7 @@ export const AUTHOR_COLORS = [
 export const COMPLETED_COLOR = '#9E9E9E';
 
 // ---- Draw a single pin on the canvas ----
-function drawPin(ctx, pin, cx, cy, authorColor, dpr) {
+function drawPin(ctx, pin, cx, cy, authorColor, dpr, likeCount, theme) {
   const r = 14 * dpr;
   const pinColor = pin.completed ? COMPLETED_COLOR : authorColor;
 
@@ -62,21 +62,21 @@ function drawPin(ctx, pin, cx, cy, authorColor, dpr) {
   ctx.textBaseline = 'middle';
   ctx.fillText(PIN_EMOJIS[pin.type], cx, cy - r * 1.6);
 
-  // Clock badge for time-constrained pins (top-right of circle)
+  // Clock badge for time-constrained pins (top-left of circle)
   if (pin.start_time && !pin.completed) {
     ctx.font = `${r * 0.75}px serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('⏰', cx + r * 0.95, cy - r * 2.45);
+    ctx.fillText('⏰', cx - r * 0.95, cy - r * 2.45);
   }
 
-  // Checkmark badge for completed pins (top-right of circle)
+  // Checkmark badge for completed pins (top-left of circle)
   if (pin.completed) {
-    const bx = cx + r * 0.95;
+    const bx = cx - r * 0.95;
     const by = cy - r * 2.45;
     ctx.beginPath();
     ctx.arc(bx, by, r * 0.5, 0, Math.PI * 2);
-    ctx.fillStyle = '#4CAF50';
+    ctx.fillStyle = theme.palette.success.main;
     ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,0.9)';
     ctx.lineWidth = 1.5 * dpr;
@@ -86,6 +86,24 @@ function drawPin(ctx, pin, cx, cy, authorColor, dpr) {
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#fff';
     ctx.fillText('✓', bx, by + r * 0.05);
+  }
+
+  // Thumbs-up badge for liked pins (top-right of circle)
+  if (likeCount > 0) {
+    const bx = cx + r * 0.95;
+    const by = cy - r * 2.45;
+    ctx.beginPath();
+    ctx.arc(bx, by, r * 0.5, 0, Math.PI * 2);
+    ctx.fillStyle = pinColor;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 1.5 * dpr;
+    ctx.stroke();
+    ctx.font = `${r * 0.65}px sans-serif`;
+    ctx.fillStyle = theme.palette.getContrastText(pinColor);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`+${likeCount}`, bx, by);
   }
 
   ctx.restore();
@@ -119,6 +137,7 @@ function touchMid(touches) {
 export default function FairgroundsMap({
   pins,
   memberColors,
+  likes,
   placing,
   currentUserId,
   onPlacePin,
@@ -129,7 +148,9 @@ export default function FairgroundsMap({
   const viewRef = useRef({ x: 0, y: 0, scale: 1 });
   const pinsRef = useRef(pins);
   const memberColorsRef = useRef(memberColors);
+  const likeCountsRef = useRef(new Map());
   const animRef = useRef(null);
+  const theme = useTheme()
 
   // Gesture state refs (avoid re-renders)
   const drag = useRef({ active: false, startX: 0, startY: 0, lastX: 0, lastY: 0, moved: false });
@@ -140,6 +161,13 @@ export default function FairgroundsMap({
   // Keep refs in sync with props so draw() always has latest data
   useEffect(() => { pinsRef.current = pins; }, [pins]);
   useEffect(() => { memberColorsRef.current = memberColors; }, [memberColors]);
+  useEffect(() => {
+    const counts = new Map();
+    (likes || []).forEach((l) => {
+      counts.set(l.pin_id, (counts.get(l.pin_id) || 0) + 1);
+    });
+    likeCountsRef.current = counts;
+  }, [likes]);
 
   // ---- Draw ----
   const draw = useCallback(() => {
@@ -151,6 +179,7 @@ export default function FairgroundsMap({
     const { x, y, scale } = viewRef.current;
     const currentPins = pinsRef.current;
     const currentMemberColors = memberColorsRef.current || {};
+    const currentLikeCounts = likeCountsRef.current;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -164,7 +193,8 @@ export default function FairgroundsMap({
       const screenX = x + pin.x * imgW * scale;
       const screenY = y + pin.y * imgH * scale;
       const authorColor = currentMemberColors[pin.user_id] || AUTHOR_COLORS[0];
-      drawPin(ctx, pin, screenX * dpr, screenY * dpr, authorColor, dpr);
+      const likeCount = currentLikeCounts.get(pin.id) || 0;
+      drawPin(ctx, pin, screenX * dpr, screenY * dpr, authorColor, dpr, likeCount, theme);
     });
 
     // Crosshair cursor overlay when in placing mode
@@ -186,8 +216,8 @@ export default function FairgroundsMap({
     animRef.current = requestAnimationFrame(draw);
   }, [draw]);
 
-  // Redraw when pins, member colors, or placing mode change
-  useEffect(() => { requestDraw(); }, [pins, memberColors, placing, requestDraw]);
+  // Redraw when pins, member colors, likes, or placing mode change
+  useEffect(() => { requestDraw(); }, [pins, memberColors, likes, placing, requestDraw]);
 
   // ---- Load map image ----
   useEffect(() => {

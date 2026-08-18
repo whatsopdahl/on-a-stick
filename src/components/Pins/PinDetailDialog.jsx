@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, TextField, Box, Typography, Chip, Avatar,
-  Divider, IconButton, CircularProgress, Alert,
+  Divider, CircularProgress, Alert,
   Switch, FormControlLabel, Tooltip,
 } from '@mui/material';
 import { AccessTime, Delete, Edit, Check, Close } from '@mui/icons-material';
@@ -11,10 +11,11 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import dayjs from 'dayjs';
 import { PIN_COLORS, PIN_EMOJIS, AUTHOR_COLORS } from '../Map/FairgroundsMap';
+import LikeButton from './LikeButton';
 
 const TIME_TYPES = new Set(['music', 'show']);
 
-export default function PinDetailDialog({ pin, members, memberColors, currentUserId, isGroupCreator, open, onClose, onDelete, onUpdate, onToggleComplete }) {
+export default function PinDetailDialog({ pin, members, memberColors, likes, currentUserId, isGroupCreator, open, onClose, onDelete, onUpdate, onToggleComplete, onToggleLike }) {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editNotes, setEditNotes] = useState('');
@@ -146,14 +147,23 @@ export default function PinDetailDialog({ pin, members, memberColors, currentUse
         <DialogContent sx={{ pt: 0 }}>
           {error && <Alert severity="error" sx={{ mb: 1.5 }}>{error}</Alert>}
 
-          {/* Author */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-            <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: authorColor }}>
-              {author?.display_name?.[0]?.toUpperCase()}
-            </Avatar>
-            <Typography variant="body2" color="text.secondary">
-              Added by <strong>{author?.display_name ?? 'Unknown'}</strong>
-            </Typography>
+          {/* Author + likes */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: authorColor }}>
+                {author?.display_name?.[0]?.toUpperCase()}
+              </Avatar>
+              <Typography variant="body2" color="text.secondary">
+                Added by <strong>{author?.display_name ?? 'Unknown'}</strong>
+              </Typography>
+            </Box>
+            <LikeButton
+              pin={pin}
+              likes={likes}
+              members={members}
+              currentUserId={currentUserId}
+              onToggleLike={onToggleLike}
+            />
           </Box>
 
           {/* Time info */}

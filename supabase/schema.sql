@@ -47,6 +47,14 @@ create table if not exists pins (
   created_at timestamptz default now()
 );
 
+-- Pin likes (any group member may like a pin; one like per user per pin)
+create table if not exists pin_likes (
+  pin_id uuid not null references pins(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz default now(),
+  primary key (pin_id, user_id)
+);
+
 -- ============================================================
 -- ROW LEVEL SECURITY
 -- ============================================================
@@ -55,6 +63,7 @@ alter table profiles enable row level security;
 alter table groups enable row level security;
 alter table group_members enable row level security;
 alter table pins enable row level security;
+alter table pin_likes enable row level security;
 
 -- Profiles
 create policy "Users can view any profile"
@@ -118,6 +127,29 @@ create policy "Group creators can delete any pin in their group"
       where groups.id = pins.group_id and groups.created_by = auth.uid()
     )
   );
+
+-- Pin likes
+create policy "Group members can view likes"
+  on pin_likes for select using (
+    exists (
+      select 1 from public.pins
+      where pins.id = pin_likes.pin_id
+        and public.is_group_member(pins.group_id, auth.uid())
+    )
+  );
+
+create policy "Group members can like pins"
+  on pin_likes for insert with check (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.pins
+      where pins.id = pin_likes.pin_id
+        and public.is_group_member(pins.group_id, auth.uid())
+    )
+  );
+
+create policy "Users can remove their own like"
+  on pin_likes for delete using (auth.uid() = user_id);
 
 -- ============================================================
 -- RPC FUNCTIONS
@@ -255,6 +287,7 @@ grant select, insert, update, delete on public.profiles      to authenticated;
 grant select, insert, update, delete on public.groups         to authenticated;
 grant select, insert, update, delete on public.group_members  to authenticated;
 grant select, insert, update, delete on public.pins           to authenticated;
+grant select, insert, delete on public.pin_likes               to authenticated;
 
 grant execute on function public.search_groups_by_name(text)  to authenticated;
 grant execute on function public.create_group(text, text)      to authenticated;
@@ -267,3 +300,4 @@ grant execute on function public.set_pin_completed(uuid, boolean) to authenticat
 -- ============================================================
 -- Enable realtime for pins table so group members see live updates
 alter publication supabase_realtime add table pins;
+alter publication supabase_realtime add table pin_likes;

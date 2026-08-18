@@ -5,10 +5,11 @@ import {
 import { EventBusy, CheckCircle } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { PIN_COLORS, PIN_EMOJIS, AUTHOR_COLORS } from '../Map/FairgroundsMap';
+import LikeButton from '../Pins/LikeButton';
 
 const TYPE_ORDER = ['food', 'music', 'activity', 'show', 'exhibit'];
 
-function PinRow({ pin, members, memberColors, onPinClick, showTime }) {
+function PinRow({ pin, members, memberColors, likes, currentUserId, onPinClick, onToggleLike, showTime }) {
   const author = members.find((m) => m.id === pin.user_id);
   const color = memberColors[pin.user_id] || AUTHOR_COLORS[0];
   const start = pin.start_time ? dayjs(pin.start_time) : null;
@@ -79,11 +80,20 @@ function PinRow({ pin, members, memberColors, onPinClick, showTime }) {
           </Box>
         }
       />
+
+      <LikeButton
+        pin={pin}
+        likes={likes}
+        members={members}
+        currentUserId={currentUserId}
+        onToggleLike={onToggleLike}
+        sx={{ ml: 1 }}
+      />
     </ListItemButton>
   );
 }
 
-export default function EventListView({ pins, members, memberColors, onPinClick }) {
+export default function EventListView({ pins, members, memberColors, likes, currentUserId, onPinClick, onToggleLike }) {
   const grouped = pins.reduce((acc, pin) => {
     if (!acc[pin.type]) acc[pin.type] = [];
     acc[pin.type].push(pin);
@@ -129,7 +139,17 @@ export default function EventListView({ pins, members, memberColors, onPinClick 
           </Box>
           <List dense>
             {grouped[type].map((pin) => (
-              <PinRow key={pin.id} pin={pin} members={members} memberColors={memberColors} onPinClick={onPinClick} showTime={!!pin.start_time} />
+              <PinRow
+                key={pin.id}
+                pin={pin}
+                members={members}
+                memberColors={memberColors}
+                likes={likes}
+                currentUserId={currentUserId}
+                onPinClick={onPinClick}
+                onToggleLike={onToggleLike}
+                showTime={!!pin.start_time}
+              />
             ))}
           </List>
           {ti < types.length - 1 && <Divider sx={{ mx: 2, mb: 1 }} />}

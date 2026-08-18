@@ -24,7 +24,7 @@ export default function MapPage() {
   const { groupId } = useParams();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const { groups, currentGroup, pins, members, isOffline, selectGroup, addPin, deletePin, updatePin, setPinCompleted } = useGroup();
+  const { groups, currentGroup, pins, likes, members, isOffline, selectGroup, addPin, deletePin, updatePin, setPinCompleted, toggleLike } = useGroup();
 
   const [placing, setPlacing] = useState(false);
   const [pendingCoords, setPendingCoords] = useState(null);
@@ -129,6 +129,14 @@ export default function MapPage() {
     }
   }, [setPinCompleted]);
 
+  const handleToggleLike = useCallback(async (pinId) => {
+    try {
+      await toggleLike(pinId);
+    } catch (err) {
+      setSnackbar({ open: true, message: err.message, severity: 'error' });
+    }
+  }, [toggleLike]);
+
   // 0=Map, 1=List, 2=Schedule, 3=Filter
   const bottomNavValue = scheduleOpen ? 2 : filterOpen ? 3 : (mainView === 'map' ? 0 : 1);
 
@@ -179,6 +187,7 @@ export default function MapPage() {
           <FairgroundsMap
             pins={filteredPins}
             allPins={pins}
+            likes={likes}
             memberColors={memberColors}
             placing={placing}
             currentUserId={user?.id}
@@ -190,7 +199,10 @@ export default function MapPage() {
             pins={filteredPins}
             members={members}
             memberColors={memberColors}
+            likes={likes}
+            currentUserId={user?.id}
             onPinClick={(pin) => setSelectedPin(pin)}
+            onToggleLike={handleToggleLike}
           />
         )}
 
@@ -248,6 +260,7 @@ export default function MapPage() {
         pin={selectedPin}
         members={members}
         memberColors={memberColors}
+        likes={likes}
         currentUserId={user?.id}
         isGroupCreator={currentGroup?.created_by === user?.id}
         open={!!selectedPin}
@@ -255,6 +268,7 @@ export default function MapPage() {
         onDelete={handleDeletePin}
         onUpdate={handleUpdatePin}
         onToggleComplete={handleToggleComplete}
+        onToggleLike={handleToggleLike}
       />
 
       <FilterPanel
