@@ -6,7 +6,7 @@ import {
   Alert,
 } from '@mui/material';
 import {
-  ArrowBack, AddLocation, Map, Schedule, FilterList,
+  ArrowBack, AddLocation, Map, ViewList, Schedule, FilterList,
   WifiOff, Close,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +17,8 @@ import AddPinDialog from '../components/Pins/AddPinDialog';
 import PinDetailDialog from '../components/Pins/PinDetailDialog';
 import FilterPanel from '../components/Filters/FilterPanel';
 import ScheduleDrawer from '../components/Schedule/ScheduleDrawer';
+import EventListView from '../components/List/EventListView';
+import { getMemberColorMap } from '../utils/memberColors';
 
 export default function MapPage() {
   const { groupId } = useParams();
@@ -27,7 +29,7 @@ export default function MapPage() {
   const [placing, setPlacing] = useState(false);
   const [pendingCoords, setPendingCoords] = useState(null);
   const [selectedPin, setSelectedPin] = useState(null);
-  const [bottomTab, setBottomTab] = useState(0); // 0=map, 1=schedule, 2=filter
+  const [mainView, setMainView] = useState('map'); // 'map' | 'list'
   const [filterOpen, setFilterOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -72,6 +74,8 @@ export default function MapPage() {
     [pins]
   );
 
+  const memberColors = useMemo(() => getMemberColorMap(members, user?.id), [members, user?.id]);
+
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (filters.types.size < 5) count++;
@@ -115,11 +119,14 @@ export default function MapPage() {
     }
   }, [updatePin]);
 
+  // 0=Map, 1=List, 2=Schedule, 3=Filter
+  const bottomNavValue = scheduleOpen ? 2 : filterOpen ? 3 : (mainView === 'map' ? 0 : 1);
+
   const handleBottomNav = (_, val) => {
-    setBottomTab(val);
-    if (val === 1) setScheduleOpen(true);
-    if (val === 2) setFilterOpen(true);
-    if (val === 0) { setScheduleOpen(false); setFilterOpen(false); }
+    if (val === 0) { setMainView('map'); setScheduleOpen(false); setFilterOpen(false); }
+    if (val === 1) { setMainView('list'); setScheduleOpen(false); setFilterOpen(false); }
+    if (val === 2) setScheduleOpen(true);
+    if (val === 3) setFilterOpen(true);
   };
 
   return (
@@ -156,17 +163,26 @@ export default function MapPage() {
         </Toolbar>
       </AppBar>
 
-      {/* Map */}
+      {/* Map / List */}
       <Box sx={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-        <FairgroundsMap
-          pins={filteredPins}
-          allPins={pins}
-          members={members}
-          placing={placing}
-          currentUserId={user?.id}
-          onPlacePin={handlePlacePin}
-          onPinClick={(pin) => { setSelectedPin(pin); setPlacing(false); }}
-        />
+        {mainView === 'map' ? (
+          <FairgroundsMap
+            pins={filteredPins}
+            allPins={pins}
+            memberColors={memberColors}
+            placing={placing}
+            currentUserId={user?.id}
+            onPlacePin={handlePlacePin}
+            onPinClick={(pin) => { setSelectedPin(pin); setPlacing(false); }}
+          />
+        ) : (
+          <EventListView
+            pins={filteredPins}
+            members={members}
+            memberColors={memberColors}
+            onPinClick={(pin) => setSelectedPin(pin)}
+          />
+        )}
 
         {/* FAB - Add Pin */}
         {!placing && (
@@ -174,7 +190,7 @@ export default function MapPage() {
             <Fab
               color="secondary"
               sx={{ position: 'absolute', bottom: 16, right: 16, zIndex: 10 }}
-              onClick={() => setPlacing(true)}
+              onClick={() => { setMainView('map'); setPlacing(true); }}
             >
               <AddLocation />
             </Fab>
@@ -183,8 +199,16 @@ export default function MapPage() {
       </Box>
 
       {/* Bottom Navigation */}
-      <BottomNavigation value={bottomTab} onChange={handleBottomNav} showLabels>
+      <BottomNavigation value={bottomNavValue} onChange={handleBottomNav} showLabels>
         <BottomNavigationAction label="Map" icon={<Map />} />
+        <BottomNavigationAction
+          label="List"
+          icon={
+            <Badge badgeContent={filteredPins.length} color="default" max={99}>
+              <ViewList />
+            </Badge>
+          }
+        />
         <BottomNavigationAction
           label="Schedule"
           icon={
@@ -213,6 +237,7 @@ export default function MapPage() {
       <PinDetailDialog
         pin={selectedPin}
         members={members}
+        memberColors={memberColors}
         currentUserId={user?.id}
         isGroupCreator={currentGroup?.created_by === user?.id}
         open={!!selectedPin}
@@ -223,18 +248,20 @@ export default function MapPage() {
 
       <FilterPanel
         open={filterOpen}
-        onClose={() => { setFilterOpen(false); setBottomTab(0); }}
+        onClose={() => setFilterOpen(false)}
         filters={filters}
         onChange={setFilters}
         members={members}
+        memberColors={memberColors}
       />
 
       <ScheduleDrawer
         open={scheduleOpen}
-        onClose={() => { setScheduleOpen(false); setBottomTab(0); }}
+        onClose={() => setScheduleOpen(false)}
         pins={timeSensitivePins}
         members={members}
-        onPinClick={(pin) => { setSelectedPin(pin); setScheduleOpen(false); setBottomTab(0); }}
+        memberColors={memberColors}
+        onPinClick={(pin) => { setSelectedPin(pin); setScheduleOpen(false); }}
       />
 
       <Snackbar

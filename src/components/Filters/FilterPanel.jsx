@@ -12,7 +12,7 @@ import { PIN_COLORS, PIN_EMOJIS, AUTHOR_COLORS } from '../Map/FairgroundsMap';
 
 const ALL_TYPES = ['food', 'music', 'activity', 'show', 'exhibit'];
 
-export default function FilterPanel({ open, onClose, filters, onChange, members }) {
+export default function FilterPanel({ open, onClose, filters, onChange, members, memberColors }) {
   const [localTypes, setLocalTypes] = useState(filters.types);
   const [localAuthors, setLocalAuthors] = useState(filters.authorIds);
   const [localTimeStart, setLocalTimeStart] = useState(filters.timeStart ? dayjs(filters.timeStart) : null);
@@ -150,8 +150,8 @@ export default function FilterPanel({ open, onClose, filters, onChange, members 
                   color="primary"
                   sx={{ fontWeight: 600 }}
                 />
-                {members.map((member, idx) => {
-                  const color = member.color || AUTHOR_COLORS[idx % AUTHOR_COLORS.length];
+                {members.map((member) => {
+                  const color = memberColors[member.id] || AUTHOR_COLORS[0];
                   const selected = !localAuthors || localAuthors.has(member.id);
                   return (
                     <Chip

@@ -96,7 +96,7 @@ function touchMid(touches) {
 // ============================================================
 export default function FairgroundsMap({
   pins,
-  members,
+  memberColors,
   placing,
   currentUserId,
   onPlacePin,
@@ -106,7 +106,7 @@ export default function FairgroundsMap({
   const imgRef = useRef(null);
   const viewRef = useRef({ x: 0, y: 0, scale: 1 });
   const pinsRef = useRef(pins);
-  const membersRef = useRef(members);
+  const memberColorsRef = useRef(memberColors);
   const animRef = useRef(null);
 
   // Gesture state refs (avoid re-renders)
@@ -117,7 +117,7 @@ export default function FairgroundsMap({
 
   // Keep refs in sync with props so draw() always has latest data
   useEffect(() => { pinsRef.current = pins; }, [pins]);
-  useEffect(() => { membersRef.current = members; }, [members]);
+  useEffect(() => { memberColorsRef.current = memberColors; }, [memberColors]);
 
   // ---- Draw ----
   const draw = useCallback(() => {
@@ -128,7 +128,7 @@ export default function FairgroundsMap({
     const img = imgRef.current;
     const { x, y, scale } = viewRef.current;
     const currentPins = pinsRef.current;
-    const currentMembers = membersRef.current;
+    const currentMemberColors = memberColorsRef.current || {};
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -141,9 +141,7 @@ export default function FairgroundsMap({
       const imgH = img?.height ?? 1;
       const screenX = x + pin.x * imgW * scale;
       const screenY = y + pin.y * imgH * scale;
-      const memberIdx = currentMembers.findIndex((m) => m.id === pin.user_id);
-      const member = memberIdx >= 0 ? currentMembers[memberIdx] : null;
-      const authorColor = member?.color || AUTHOR_COLORS[Math.max(0, memberIdx) % AUTHOR_COLORS.length];
+      const authorColor = currentMemberColors[pin.user_id] || AUTHOR_COLORS[0];
       drawPin(ctx, pin, screenX * dpr, screenY * dpr, authorColor, dpr);
     });
 
@@ -166,8 +164,8 @@ export default function FairgroundsMap({
     animRef.current = requestAnimationFrame(draw);
   }, [draw]);
 
-  // Redraw when pins, members, or placing mode change
-  useEffect(() => { requestDraw(); }, [pins, members, placing, requestDraw]);
+  // Redraw when pins, member colors, or placing mode change
+  useEffect(() => { requestDraw(); }, [pins, memberColors, placing, requestDraw]);
 
   // ---- Load map image ----
   useEffect(() => {

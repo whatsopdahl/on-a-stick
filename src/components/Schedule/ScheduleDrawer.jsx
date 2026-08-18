@@ -7,7 +7,7 @@ import { Close, AccessTime } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { PIN_COLORS, PIN_EMOJIS, AUTHOR_COLORS } from '../Map/FairgroundsMap';
 
-export default function ScheduleDrawer({ open, onClose, pins, members, onPinClick }) {
+export default function ScheduleDrawer({ open, onClose, pins, members, memberColors, onPinClick }) {
   // Group pins by day
   const grouped = pins.reduce((acc, pin) => {
     const day = dayjs(pin.start_time).format('YYYY-MM-DD');
@@ -62,8 +62,7 @@ export default function ScheduleDrawer({ open, onClose, pins, members, onPinClic
               <List dense>
                 {grouped[day].map((pin, idx) => {
                   const author = members.find((m) => m.id === pin.user_id);
-                  const authorIdx = members.findIndex((m) => m.id === pin.user_id);
-                  const authorColor = author?.color || AUTHOR_COLORS[Math.max(0, authorIdx) % AUTHOR_COLORS.length];
+                  const authorColor = memberColors[pin.user_id] || AUTHOR_COLORS[0];
                   const start = dayjs(pin.start_time);
                   const end = pin.end_time ? dayjs(pin.end_time) : null;
                   const isOngoing = dayjs().isAfter(start) && (!end || dayjs().isBefore(end));

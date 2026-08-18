@@ -13,7 +13,7 @@ import { PIN_COLORS, PIN_EMOJIS, AUTHOR_COLORS } from '../Map/FairgroundsMap';
 
 const TIME_TYPES = new Set(['music', 'show']);
 
-export default function PinDetailDialog({ pin, members, currentUserId, isGroupCreator, open, onClose, onDelete, onUpdate }) {
+export default function PinDetailDialog({ pin, members, memberColors, currentUserId, isGroupCreator, open, onClose, onDelete, onUpdate }) {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editNotes, setEditNotes] = useState('');
@@ -28,8 +28,7 @@ export default function PinDetailDialog({ pin, members, currentUserId, isGroupCr
   const canDelete = isOwner || isGroupCreator;
   const needsTimes = TIME_TYPES.has(pin.type);
   const author = members.find((m) => m.id === pin.user_id);
-  const authorIdx = members.findIndex((m) => m.id === pin.user_id);
-  const authorColor = author?.color || AUTHOR_COLORS[Math.max(0, authorIdx) % AUTHOR_COLORS.length];
+  const authorColor = memberColors[pin.user_id] || AUTHOR_COLORS[0];
 
   const startEdit = () => {
     setEditTitle(pin.title);
